@@ -3,7 +3,9 @@ const child = require('child_process');
 const util = require('util');
 const debug = require('debug')('browserless-docker-deploy');
 const exec = util.promisify(child.exec);
-const { map, noop } = require('lodash');
+const { map } = require('lodash');
+const path = require('path');
+const fs = require('fs-extra');
 
 const {
   chromeVersions,
@@ -12,7 +14,6 @@ const {
 } = require('../package.json');
 
 const REPO = 'browserless/chrome';
-const BASE = 'browserless/base';
 
 const logExec = (cmd) => {
   debug(`  "${cmd}"`);
@@ -28,11 +29,6 @@ async function cleanup () {
   return logExec(`git reset origin/master --hard`);
 }
 
-const buildBase = async () => {
-  await logExec(`docker build -t ${BASE}:latest ./base`);
-  await logExec(`docker push ${BASE}:latest`);
-}
-
 // version is the full tag (1.2.3-puppeteer-1.11.1)
 // chrome version is one of the versions in packageJson.chromeVersions
 const deployVersion = async (tags, chromeVersion) => {
@@ -43,9 +39,9 @@ const deployVersion = async (tags, chromeVersion) => {
   debug(`Beginning docker build and publish of tag ${patchBranch} ${minorBranch} ${majorBranch}`);
 
   await logExec(`npm install --silent --save --save-exact puppeteer@${puppeteerVersion}`);
-  await logExec(`npm run post-install`);
+  await logExec(`${isChromeStable ? 'USE_CHROME_STABLE=true CHROMEDRIVER_SKIP_DOWNLOAD=false ' : ''}npm run post-install`);
 
-  const versionJson = require('../version.json');
+  const versionJson = fs.readJSONSync(path.join(__dirname, '..', 'version.json'));
   const chromeStableArg = isChromeStable ? 'true' : 'false';
 
   // docker build
@@ -69,21 +65,11 @@ const deployVersion = async (tags, chromeVersion) => {
     logExec(`docker push ${REPO}:${majorBranch}`),
   ]);
 
-  // Commit the resulting package/meta file changes, tag and push
-  await logExec(`git add ./*.json`);
-  await logExec(`git commit --quiet -m "DEPLOY.js commitings JSON files for tag ${patchBranch}"`).catch(noop);
-  await logExec(`git tag --force ${patchBranch}`);
-  await logExec(`git push origin ${patchBranch} --force --quiet --no-verify &> /dev/null`).catch(noop);
-
   // git reset for next update
   await cleanup();
 }
 
 async function deploy () {
-  // Build a fresh base image first, then subsequent
-  // docker builds are super fast.
-  await buildBase();
-
   const versions = map(chromeVersions, (chromeVersion) => {
     const [ major, minor, patch ] = version.split('.');
 
@@ -108,7 +94,7 @@ async function deploy () {
     Promise.resolve()
   );
 
-  await logExec(`docker system prune -af`);
+  await logExec(`docker images -a | grep "${REPO}" | awk '{print $3}' | xargs docker rmi`);
   debug(`Complete! Cleaning up file-system and exiting.`);
 }
 

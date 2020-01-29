@@ -1,4 +1,4 @@
-FROM browserless/base:latest
+FROM browserless/base:1.0.0
 
 # Build Args
 ARG USE_CHROME_STABLE
@@ -14,6 +14,7 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV USE_CHROME_STABLE=${USE_CHROME_STABLE}
 ENV WORKSPACE_DIR=$APP_DIR/workspace
+ENV LANG="C.UTF-8"
 
 RUN mkdir -p $APP_DIR $WORKSPACE_DIR
 
@@ -27,7 +28,7 @@ COPY . .
 # Install Chrome Stable when specified
 RUN if [ "$USE_CHROME_STABLE" = "true" ]; then \
     cd /tmp &&\
-    wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb &&\
+    wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb &&\
     dpkg -i google-chrome-stable_current_amd64.deb;\
   fi
 

@@ -69,6 +69,7 @@ module.exports = async function pdf({ page, context }) {
     rejectRequestPattern = [],
     requestInterceptors = [],
     setExtraHTTPHeaders,
+    setJavaScriptEnabled = null,
     waitFor,
   } = context;
 
@@ -78,6 +79,10 @@ module.exports = async function pdf({ page, context }) {
 
   if (setExtraHTTPHeaders) {
     await page.setExtraHTTPHeaders(setExtraHTTPHeaders);
+  }
+
+  if (setJavaScriptEnabled !== null) {
+    await page.setJavaScriptEnabled(setJavaScriptEnabled);
   }
 
   if (rejectRequestPattern.length || requestInterceptors.length) {
@@ -131,7 +136,7 @@ module.exports = async function pdf({ page, context }) {
         return true;
       }, waitFor);
 
-      await (isSelector ? page.waitFor(waitFor) : page.waitForFunction(waitFor));
+      await (isSelector ? page.waitFor(waitFor) : page.evaluate(`(${waitFor})()`));
     } else {
       await page.waitFor(waitFor);
     }

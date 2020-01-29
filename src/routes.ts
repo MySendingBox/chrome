@@ -19,6 +19,7 @@ import {
   fnLoader,
   generateChromeTarget,
   lstat,
+  queryValidation,
 } from './utils';
 
 import {
@@ -56,10 +57,12 @@ const jsonParser = bodyParser.json({
   limit: MAX_PAYLOAD_SIZE,
   type: ['application/json'],
 });
+
 const jsParser = bodyParser.text({
   limit: MAX_PAYLOAD_SIZE,
   type: ['text/plain', 'application/javascript'],
 });
+
 const htmlParser = bodyParser.text({
   limit: MAX_PAYLOAD_SIZE,
   type: ['text/plain', 'text/html'],
@@ -72,6 +75,7 @@ interface IGetRoutes {
   getPressure: () => any;
   workspaceDir: string;
   disabledFeatures: Feature[];
+  enableAPIGet: boolean;
 }
 
 export const getRoutes = ({
@@ -81,6 +85,7 @@ export const getRoutes = ({
   getPressure,
   workspaceDir,
   disabledFeatures,
+  enableAPIGet,
 }: IGetRoutes): Router => {
   const router = Router();
   const storage = multer.diskStorage({
@@ -197,8 +202,6 @@ export const getRoutes = ({
   }
 
   if (!disabledFeatures.includes(Feature.FUNCTION_ENDPOINT)) {
-    // function route for executing puppeteer scripts, accepts a JSON body with
-    // code and context
     router.post('/function',
       jsonParser,
       jsParser,
@@ -264,8 +267,18 @@ export const getRoutes = ({
   }
 
   if (!disabledFeatures.includes(Feature.SCREENSHOT_ENDPOINT)) {
-    // Helper route for capturing screenshots, accepts a POST body containing a URL and
-    // puppeteer's screenshot options (see the schema in schemas.ts);
+    enableAPIGet && router.get('/screenshot',
+      queryValidation(screenshotSchema),
+      asyncWebHandler(async (req: Request, res: Response) =>
+        puppeteerProvider.runHTTP({
+          code: screenshot,
+          context: req.body,
+          req,
+          res,
+        }),
+      ),
+    );
+
     router.post('/screenshot',
       jsonParser,
       htmlParser,
@@ -285,8 +298,18 @@ export const getRoutes = ({
   }
 
   if (!disabledFeatures.includes(Feature.CONTENT_ENDPOINT)) {
-    // Helper route for capturing content body, accepts a POST body containing a URL
-    // (see the schema in schemas.ts);
+    enableAPIGet && router.get('/content',
+      queryValidation(contentSchema),
+      asyncWebHandler(async (req: Request, res: Response) =>
+        puppeteerProvider.runHTTP({
+          code: content,
+          context: req.body,
+          req,
+          res,
+        }),
+      ),
+    );
+
     router.post('/content',
       jsonParser,
       htmlParser,
@@ -305,9 +328,19 @@ export const getRoutes = ({
     );
   }
 
-  // Helper route for scraping, accepts a POST body containing a URL
-  // (see the schema in schemas.ts);
   if (!disabledFeatures.includes(Feature.SCRAPE_ENDPOINT)) {
+    enableAPIGet && router.get('/scrape',
+      queryValidation(scrapeSchema),
+      asyncWebHandler(async (req: Request, res: Response) =>
+        puppeteerProvider.runHTTP({
+          code: scrape,
+          context: req.body,
+          req,
+          res,
+        }),
+      ),
+    );
+
     router.post('/scrape',
       jsonParser,
       bodyValidation(scrapeSchema),
@@ -326,8 +359,18 @@ export const getRoutes = ({
   }
 
   if (!disabledFeatures.includes(Feature.PDF_ENDPOINT)) {
-    // Helper route for capturing screenshots, accepts a POST body containing a URL and
-    // puppeteer's screenshot options (see the schema in schemas.ts);
+    enableAPIGet && router.get('/pdf',
+      queryValidation(pdfSchema),
+      asyncWebHandler(async (req: Request, res: Response) =>
+        puppeteerProvider.runHTTP({
+          code: pdf,
+          context: req.body,
+          req,
+          res,
+        }),
+      ),
+    );
+
     router.post('/pdf',
       jsonParser,
       htmlParser,
@@ -347,7 +390,20 @@ export const getRoutes = ({
   }
 
   if (!disabledFeatures.includes(Feature.STATS_ENDPOINT)) {
-    // Helper route for capturing stats, accepts a POST body containing a URL
+    enableAPIGet && router.get('/stats',
+      queryValidation(statsSchema),
+      asyncWebHandler(async (req: Request, res: Response) =>
+        puppeteerProvider.runHTTP({
+          builtin: ['url', 'child_process', 'path'],
+          code: stats,
+          context: req.body,
+          external: ['tree-kill'],
+          req,
+          res,
+        }),
+      ),
+    );
+
     router.post('/stats', jsonParser, bodyValidation(statsSchema), asyncWebHandler(
       async (req: Request, res: Response) =>
         puppeteerProvider.runHTTP({

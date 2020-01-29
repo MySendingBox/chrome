@@ -31,6 +31,9 @@ export const mkdir = util.promisify(fs.mkdir);
 export const rimraf = util.promisify(rmrf);
 export const getDebug = (level: string) => dbg(`browserless:${level}`);
 
+const webDriverPath = '/webdriver/session';
+const webdriverSessionCloseReg = /^\/webdriver\/session\/((\w+$)|(\w+\/window))/;
+
 const debug = getDebug('system');
 
 type IUpgradeHandler = (req: IncomingMessage, socket: net.Socket, head: Buffer) => Promise<any>;
@@ -58,7 +61,12 @@ export interface IWorkspaceItem {
 
 const readFilesRecursive = async (dir: string, results: IWorkspaceItem[] = []) => {
   const [, parentDir] = dir.split(WORKSPACE_DIR);
-  const deburredParentDir = parentDir.replace(/^\//, '');
+  const workspaceDir = _.chain(parentDir)
+    .split(path.sep)
+    .compact()
+    .head()
+    .value();
+
   const files = await readdir(dir);
 
   await Promise.all(files.map(async (file) => {
@@ -74,7 +82,7 @@ const readFilesRecursive = async (dir: string, results: IWorkspaceItem[] = []) =
       name: file,
       path: path.join('/workspace', parentDir, file),
       size: stats.size,
-      workspaceId: deburredParentDir.length ? deburredParentDir : null,
+      workspaceId: workspaceDir || null,
     });
 
     return results;
@@ -140,6 +148,35 @@ export const bodyValidation = (schema: Joi.Schema) => {
     }
 
     const result = Joi.validate(req.body, schema);
+
+    if (result.error) {
+      debug(`Malformed incoming request: ${result.error}`);
+      return res.status(400).send(result.error.details);
+    }
+
+    // Allow .defaults to work otherwise
+    // Joi schemas default's won't apply
+    req.body = result.value;
+
+    return next();
+  };
+};
+
+export const queryValidation = (schema: Joi.Schema) => {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    let inflated: string | null = null;
+
+    try {
+      inflated = JSON.parse(req.query.body);
+    } catch {
+      inflated = null;
+    }
+
+    if (!inflated) {
+      return res.status(400).send(`The query-parameter "body" is required, and must be a URL-encoded JSON object.`);
+    }
+
+    const result = Joi.validate(inflated, schema);
 
     if (result.error) {
       debug(`Malformed incoming request: ${result.error}`);
@@ -352,4 +389,16 @@ export const getTimeoutParam = (req: IHTTPRequest | IWebdriverStartHTTP): number
   }
 
   return null;
+};
+
+export const isWebdriverStart = (req: IncomingMessage) => {
+  return req.method?.toLowerCase() === 'post' && req.url === webDriverPath
+};
+
+export const isWebdriverClose = (req: IncomingMessage) => {
+  return req.method?.toLowerCase() === 'delete' && webdriverSessionCloseReg.test(req.url || '')
+};
+
+export const isWebdriver = (req: IncomingMessage) => {
+  return req.url?.includes(webDriverPath);
 };

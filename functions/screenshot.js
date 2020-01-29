@@ -29,6 +29,7 @@ module.exports = async function screenshot ({ page, context } = {}) {
     rejectRequestPattern = [],
     requestInterceptors = [],
     setExtraHTTPHeaders = null,
+    setJavaScriptEnabled = null,
     viewport,
     waitFor,
   } = context;
@@ -39,6 +40,10 @@ module.exports = async function screenshot ({ page, context } = {}) {
 
   if (setExtraHTTPHeaders) {
     await page.setExtraHTTPHeaders(setExtraHTTPHeaders);
+  }
+
+  if (setJavaScriptEnabled !== null) {
+    await page.setJavaScriptEnabled(setJavaScriptEnabled);
   }
 
   if (rejectRequestPattern.length || requestInterceptors.length) {
@@ -88,7 +93,7 @@ module.exports = async function screenshot ({ page, context } = {}) {
         return true;
       }, waitFor);
 
-      await (isSelector ? page.waitFor(waitFor) : page.waitForFunction(waitFor));
+      await (isSelector ? page.waitFor(waitFor) : page.evaluate(`(${waitFor})()`));
     } else {
       await page.waitFor(waitFor);
     }
