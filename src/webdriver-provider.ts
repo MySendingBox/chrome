@@ -1,28 +1,22 @@
-import { ChildProcess } from 'child_process';
 import { IncomingMessage, OutgoingMessage, ServerResponse } from 'http';
 import * as httpProxy from 'http-proxy';
 import * as _ from 'lodash';
 
-import { IWebdriverStartHTTP } from './browserless';
 import * as chromeHelper from './chrome-helper';
-import { IDone, IJob, Queue } from './queue';
+import { Queue } from './queue';
 import { getDebug } from './utils';
+
+import {
+  IChromeDriver,
+  IWebdriverStartHTTP,
+  IWebDriverSession,
+  IWebDriverSessions,
+  IDone,
+  IJob,
+} from './types';
 
 const debug = getDebug('webdriver');
 const kill = require('tree-kill');
-
-interface IWebDriverSession {
-  browser: chromeHelper.IBrowser | null;
-  chromeDriver: ChildProcess;
-  done: IDone;
-  sessionId: string;
-  proxy: any;
-  res: ServerResponse;
-}
-
-interface IWebDriverSessions {
-  [key: string]: IWebDriverSession;
-}
 
 export class WebDriver {
   private queue: Queue;
@@ -79,6 +73,8 @@ export class WebDriver {
 
                 debug('Session started, got body: ', responseBody);
 
+                chromeDriver.chromeProcess.once('exit', done);
+
                 job.id = id;
 
                 this.webDriverSessions[id] = {
@@ -101,6 +97,7 @@ export class WebDriver {
                 job.close = () => {
                   debug(`Killing chromedriver and proxy ${chromeDriver.chromeProcess.pid}`);
                   kill(chromeDriver.chromeProcess.pid, 'SIGKILL');
+                  chromeDriver.chromeProcess.off('close', done);
                   chromeDriver.browser && chromeHelper.closeBrowser(chromeDriver.browser);
                   proxy.close();
                   delete this.webDriverSessions[id];
@@ -218,15 +215,28 @@ export class WebDriver {
     return session;
   }
 
-  private launchChrome(body: any, retries = 1): Promise<chromeHelper.IChromeDriver> {
+  private launchChrome(body: any, retries = 1): Promise<IChromeDriver> {
     const blockAds = body.desiredCapabilities['browserless.blockAds'];
     const trackingId = body.desiredCapabilities['browserless.trackingId'];
     const pauseOnConnect = body.desiredCapabilities['browserless.pause'];
+    const launchArgs: string[] = _.get(body, 'desiredCapabilities["goog:chromeOptions"].args', []);
+    const windowSizeArg = launchArgs.find((arg) => arg.includes('window-size='));
+    const windowSizeParsed = windowSizeArg && windowSizeArg.split('=')[1].split(',');
+    let windowSize;
+
+    if (Array.isArray(windowSizeParsed)) {
+      const [ width, height ] = windowSizeParsed;
+      windowSize = {
+        width: +width,
+        height: +height,
+      };
+    }
 
     return chromeHelper.launchChromeDriver({
       blockAds,
       pauseOnConnect,
       trackingId,
+      windowSize,
     })
       .catch((error) => {
         debug(`Issue launching ChromeDriver, error:`, error);

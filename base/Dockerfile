@@ -1,5 +1,7 @@
 FROM ubuntu:18.04
 
+COPY fonts.conf /etc/fonts/local.conf
+
 # Dependencies + NodeJS
 RUN apt-get -qq update && \
   echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections && \
@@ -8,10 +10,16 @@ RUN apt-get -qq update && \
   apt-add-repository ppa:malteworld/ppa && apt-get -qq update && apt-get -y -qq --no-install-recommends install \
   dumb-init \
   adobe-flashplugin \
-  msttcorefonts \
+  git \
   ffmpeg \
+  msttcorefonts \
+  fonts-ubuntu \
   fonts-noto-color-emoji \
   fonts-noto-cjk \
+  fonts-ipafont-gothic \
+  fonts-wqy-zenhei \
+  fonts-kacst \ 
+  fonts-freefont-ttf \
   fonts-liberation \
   fonts-thai-tlwg \
   fonts-indic \
@@ -52,6 +60,7 @@ RUN apt-get -qq update && \
   libxss1 \
   libxtst6 \
   libllvm8 \
+  libgbm-dev \
   ca-certificates \
   libappindicator1 \
   libnss3 \

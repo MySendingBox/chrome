@@ -1,6 +1,6 @@
 {
   "name": "browserless-chrome",
-  "version": "1.24.0",
+  "version": "1.28.0",
   "description": "Chrome-as-a-service on your own hardware or in the cloud.",
   "repository": "browserless/chrome",
   "main": "build/index.js",
@@ -18,31 +18,51 @@
     "start": "node ./build",
     "lint": "tslint -c tslint.json 'src/**/*.ts'",
     "test": "DEBUG=quiet jest --runInBand",
-    "prepush": "npm run lint && npm test",
     "symlink-chrome": "node ./scripts/symlink-chrome",
     "external": "rimraf debugger/devtools && node ./scripts/install-external-deps.js",
-    "post-install": "npm run symlink-chrome && npm run meta && npm run external"
+    "post-install": "npm run external && npm run symlink-chrome && npm run meta"
   },
   "puppeteerVersions": {
-    "puppeteer-1.17.0": "1.17.0",
-    "puppeteer-1.18.1": "1.18.1",
-    "puppeteer-1.19.0": "1.19.0",
-    "puppeteer-1.20.0": "1.20.0",
-    "puppeteer-2.0.0": "2.0.0",
-    "chrome-stable": "1.15.0"
+    "puppeteer-1.17.0": {
+      "puppeteer": "1.17.0",
+      "chromeRevision": "662092"
+    },
+    "puppeteer-1.18.1": {
+      "puppeteer": "1.18.1",
+      "chromeRevision": "672088"
+    },
+    "puppeteer-1.19.0": {
+      "puppeteer": "1.19.0",
+      "chromeRevision": "674921"
+    },
+    "puppeteer-1.20.0": {
+      "puppeteer": "1.20.0",
+      "chromeRevision": "686378"
+    },
+    "puppeteer-2.0.0": {
+      "puppeteer": "2.0.0",
+      "chromeRevision": "706915"
+    },
+    "puppeteer-2.1.1": {
+      "puppeteer": "2.1.1",
+      "chromeRevision": "737027"
+    },
+    "chrome-stable": {
+      "puppeteer": "1.15.0",
+      "chromeRevision": "722274"
+    }
   },
-  "chromeVersions": [
+  "releaseVersions": [
+    "puppeteer-2.1.1",
     "puppeteer-2.0.0",
     "puppeteer-1.20.0",
     "puppeteer-1.19.0",
     "puppeteer-1.18.1",
-    "puppeteer-1.17.0",
     "chrome-stable"
   ],
   "author": "jgriffith",
   "license": "GPL-3.0",
   "dependencies": {
-    "@cypress/xvfb": "^1.2.4",
     "@types/archiver": "^3.0.0",
     "@types/cookie": "^0.3.2",
     "@types/cors": "^2.8.4",
@@ -61,7 +81,7 @@
     "archiver": "^3.0.0",
     "bluebird": "^3.5.5",
     "body-parser": "^1.18.2",
-    "chromedriver": "^79.0.0",
+    "chromedriver": "^80.0.0",
     "cookie": "^0.4.0",
     "cors": "^2.8.4",
     "debug": "^4.0.0",
@@ -78,11 +98,12 @@
     "node-fetch": "^2.2.0",
     "node-pdftk": "^2.0.0",
     "prom-client": "^11.5.3",
-    "puppeteer": "^2.0.0",
+    "puppeteer": "^2.1.0",
     "queue": "^6.0.0",
     "request": "^2.83.0",
     "rimraf": "^3.0.0",
     "selenium-webdriver": "^4.0.0-alpha.1",
+    "sharp": "^0.25.1",
     "systeminformation": "^4.14.8",
     "tree-kill": "^1.2.0",
     "ts-jest": "^25.0.0",
@@ -92,21 +113,14 @@
     "vm2": "^3.8.1"
   },
   "devDependencies": {
-    "env-cmd": "^10.0.0",
-    "husky": "^4.0.3"
+    "env-cmd": "^10.0.0"
   },
   "jest": {
     "testEnvironment": "node",
-    "coverageDirectory": "../coverage/",
-    "collectCoverageFrom": [
-      "**/*.ts",
-      "!*.*"
-    ],
     "rootDir": "src",
     "moduleFileExtensions": [
       "ts",
-      "js",
-      "json"
+      "js"
     ],
     "transform": {
       ".(ts)": "ts-jest"

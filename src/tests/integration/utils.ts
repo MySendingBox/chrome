@@ -2,7 +2,7 @@ import { exec as execNode } from 'child_process';
 import * as _ from 'lodash';
 import * as os from 'os';
 import * as util from 'util';
-import { IBrowserlessOptions } from '../../models/options.interface';
+import { IBrowserlessOptions } from '../../types';
 
 export const exec = util.promisify(execNode);
 export const getPort = () => 3000 + (+_.uniqueId());
@@ -13,7 +13,6 @@ export const defaultParams = (): IBrowserlessOptions => ({
   disabledFeatures: [],
   enableAPIGet: true,
   enableCors: false,
-  enableXvfb: 'CI' in process.env ? true : false,
   errorAlertURL: null,
   exitOnHealthFailure: false,
   functionBuiltIns: ['url'],

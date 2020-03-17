@@ -1,18 +1,15 @@
 import * as fs from 'fs';
 import * as _ from 'lodash';
 import * as os from 'os';
-import * as puppeteer from 'puppeteer';
-import {Feature, isFeature} from './features';
+import { Features, isFeature } from './features';
+import { Feature } from './types';
 
 const debug = require('debug');
 const untildify = require('untildify');
-const packageJson = require('puppeteer/package.json');
 
 // Required, by default, to make certain API's work
 const REQUIRED_INTERNALS = ['url'];
-const REQUIRED_EXTERNALS = ['lighthouse', 'node-pdftk'];
-const IS_DOCKER = process.env.IS_DOCKER || false;
-const CHROME_BINARY_DEFAULT_LOCATION = '/usr/bin/google-chrome';
+const REQUIRED_EXTERNALS = ['lighthouse', 'node-pdftk', 'sharp'];
 
 const getDebug = () => {
   if (typeof process.env.DEBUG !== 'undefined') {
@@ -34,14 +31,14 @@ const getDisabledFeatures = () => {
       if (isFeature(disabledFeature)) {
         return disabledFeature as Feature;
       }
-      throw new Error(`Unsupported feature '${disabledFeature}'. Supported features: [${Object.entries(Feature)
+      throw new Error(`Unsupported feature '${disabledFeature}'. Supported features: [${Object.entries(Features)
         .map(([_, v]) => v).join(',')}]`);
     });
-  if (!parseJSONParam(process.env.ENABLE_DEBUGGER, true) && !disabledFeatures.includes(Feature.DEBUGGER)) {
-    disabledFeatures.push(Feature.DEBUGGER);
+  if (!parseJSONParam(process.env.ENABLE_DEBUGGER, true) && !disabledFeatures.includes(Features.DEBUGGER)) {
+    disabledFeatures.push(Features.DEBUGGER);
   }
-  if (!parseJSONParam(process.env.ENABLE_DEBUG_VIEWER, true) && !disabledFeatures.includes(Feature.DEBUG_VIEWER)) {
-    disabledFeatures.push(Feature.DEBUG_VIEWER);
+  if (!parseJSONParam(process.env.ENABLE_DEBUG_VIEWER, true) && !disabledFeatures.includes(Features.DEBUG_VIEWER)) {
+    disabledFeatures.push(Features.DEBUG_VIEWER);
   }
   return disabledFeatures;
 };
@@ -89,32 +86,19 @@ export const DEFAULT_USER_DATA_DIR: string | undefined = process.env.DEFAULT_USE
   untildify(process.env.DEFAULT_USER_DATA_DIR) :
   undefined;
 export const PREBOOT_CHROME: boolean = parseJSONParam(process.env.PREBOOT_CHROME, false);
-export const CHROME_BINARY_LOCATION: string = process.env.CHROME_BINARY_LOCATION || (() => {
-  // If it's installed already (docker) use it
-  if (IS_DOCKER) {
-    return CHROME_BINARY_DEFAULT_LOCATION;
-  } else {
-    // Use puppeteer's copy otherwise
-    const browserFetcher = puppeteer.createBrowserFetcher();
-
-    return browserFetcher.revisionInfo(packageJson.puppeteer.chromium_revision).executablePath;
-  }
-})();
 
 // Security and accessibility
 export const DEBUG: string | undefined = getDebug();
 export const DEMO_MODE: boolean = parseJSONParam(process.env.DEMO_MODE, false);
 export const DISABLED_FEATURES: Feature[] = getDisabledFeatures();
 export const ENABLE_CORS: boolean = parseJSONParam(process.env.ENABLE_CORS, false);
-export const ENABLE_XVBF: boolean = parseJSONParam(process.env.ENABLE_XVBF, false);
 export const ENABLE_API_GET: boolean = parseJSONParam(process.env.ENABLE_API_GET, false);
 export const TOKEN: string | null = process.env.TOKEN || null;
 
 // Puppeteer behavior
 export const DISABLE_AUTO_SET_DOWNLOAD_BEHAVIOR = parseJSONParam(process.env.DISABLE_AUTO_SET_DOWNLOAD_BEHAVIOR, false);
 export const FUNCTION_BUILT_INS: string[] = parseJSONParam(process.env.FUNCTION_BUILT_INS, REQUIRED_INTERNALS);
-export const FUNCTION_ENABLE_INCOGNITO_MODE: boolean =
-  parseJSONParam(process.env.FUNCTION_ENABLE_INCOGNITO_MODE, false);
+export const FUNCTION_ENABLE_INCOGNITO_MODE: boolean = parseJSONParam(process.env.FUNCTION_ENABLE_INCOGNITO_MODE, false);
 export const FUNCTION_EXTERNALS: string[] = parseJSONParam(process.env.FUNCTION_EXTERNALS, REQUIRED_EXTERNALS);
 export const WORKSPACE_DIR: string = fs.existsSync(expandedDir) ? expandedDir : os.tmpdir();
 export const WORKSPACE_DELETE_EXPIRED: boolean = parseJSONParam(process.env.WORKSPACE_DELETE_EXPIRED, false);
@@ -136,6 +120,14 @@ export const METRICS_JSON_PATH: string | null = process.env.METRICS_JSON_PATH ?
   null;
 
 // Server Options
+
+// Host and port to bind our server to
 export const HOST: string | undefined = process.env.HOST;
-export const MAX_PAYLOAD_SIZE: string = process.env.MAX_PAYLOAD_SIZE || '5mb';
 export const PORT: number = parseNumber(process.env.PORT, 8080);
+
+// Host and port for /session calls to build URLs to.
+// Useful for when browserless is behind a proxy
+export const PROXY_HOST: string | undefined = process.env.PROXY_HOST;
+export const PROXY_PORT: string | undefined = process.env.PROXY_PORT;
+export const PROXY_SSL: boolean = parseJSONParam(process.env.PROXY_SSL, false);
+export const MAX_PAYLOAD_SIZE: string = process.env.MAX_PAYLOAD_SIZE || '5mb';

@@ -1,3 +1,38 @@
+# [1.28.0](https://github.com/browserless/chrome/compare/v1.27.0...v1.28.0)
+- Dependency updates.
+- Sets a system-default font of Ubuntu for most sites that use `system-ui` in their font declarations.
+- Fixes health-check failure webhooks.
+- New `PROXY_HOST`, `PROXY_PORT` and `PROXY_SSL` for external load-balancers. [See docsite for more info](https://docs.browserless.io/docs/docker.html#using-a-proxy).
+- Moves over to GH actions over Travis for CI.
+
+# [1.27.0](https://github.com/browserless/chrome/compare/v1.26.1...v1.27.0)
+- Dependency updates.
+- New `manipulate` params for screenshots, allowing for resizing, flipping and more.
+- Better tracking of chrome-process for cleanup of zombied sessions.
+
+# [1.26.1](https://github.com/browserless/chrome/compare/v1.26.0...v1.26.1)
+- Dependency updates.
+- Added `git` as a dependency in dockerfile for git-based npm dependencies to work.
+- Fixed an issue in `start.sh` so that errors bubble up properly and close the process.
+- Bumps `browserless/base` to `1.2.0`.
+
+# [1.26.0](https://github.com/browserless/chrome/compare/v1.25.0...v1.26.0)
+- Dependency updates.
+- Dropping pre-push hooks for speed.
+- Consolidate all interfaces/types to a types.d.ts file.
+- Fixes an issue where numerous chrome instances launch when prebooting.
+- Fixes an issue where incoming requests don't use the pre-booted chrome instance.
+- Uses `page.setViewport` when `--window-size` is set in params to help with screenshots not appearing properly (chromedriver only).
+- 
+
+# [1.25.0](https://github.com/browserless/chrome/compare/v1.24.0...v1.25.0)
+- Dependency updates.
+- Stricter build-time arguments for chromium and chromedriver assets.
+- Better XVFB functionality.
+- New parameters for most API's, `addScriptTag` and `addStyleTag`, accepting an array of scripts/styles respectively.
+- Drop support for `puppeteer@1.17.0`.
+- Proper support for parsing `ignoreDefaultArgs` query-parameters.
+
 # [1.24.0](https://github.com/browserless/chrome/compare/v1.23.1...v1.24.0)
 - Dependency updates.
 - Bugfix on our debugger's play button being off-center.
